@@ -11,20 +11,21 @@ const userRoutes = require('./routes/userRoutes');
 const watchlistRoutes = require('./routes/watchlistRoutes')
 const movieRoutes = require('./routes/movieRoutes');
 const reviewRoutes = require('./routes/reviewRoutes')
-
+const aiRoutes = require('./routes/aiRoutes')
 connectDB()
 
 const app = express()
+
+app.use(express.json())
+
+app.use(cookieParser())
 
 app.use(cors({
     origin: process.env.FRONTEND_URL, 
     credentials: true
 }));
 
-app.use(express.json())
-
-app.use(cookieParser());
-
+app.use('/api/ai', aiRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/profile', userRoutes);
 app.use('/api/movies', movieRoutes);

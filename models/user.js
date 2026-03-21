@@ -13,6 +13,8 @@ const userSchema = new mongoose.Schema(
       type: String, 
       required: true 
     },
+    resetPasswordToken: String, 
+    resetPasswordExpire: Date,  
     name: { 
       type: String, 
       default: "" // This will be filled during onboarding
