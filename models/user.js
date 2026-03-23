@@ -36,6 +36,14 @@ const userSchema = new mongoose.Schema(
       default: false 
     },
     watchlist: [{ type: Object }],
+    
+    weeklySpotlight: {
+      themeTitle: String,
+      themeDescription: String,
+      movies: [{ type: Object }], 
+      generatedAt: { type: Date, default: Date.now }
+    }
+
   },
   { timestamps: true },
 );
