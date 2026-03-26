@@ -1,5 +1,6 @@
 // Helper for TMDB Requests
 const axios = require("axios");
+const logActivity = require("../utils/logger");
 
 console.log("BASE URL CHECK:", process.env.TMDB_BASE_URL);
 console.log("TOKEN CHECK:", process.env.TMDB_TOKEN ? "Exists" : "MISSING");
@@ -158,6 +159,9 @@ exports.searchMovies = async (req, res) => {
     const { data } = await tmdb.get(
       `/search/movie?query=${encodeURIComponent(query)}&include_adult=false`,
     );
+
+    logActivity(req.user.id, `Manually searched for: ${query}`, "search");
+    
     res.json(filterResults(data.results));
   } catch (err) {
     res.status(500).json({ message: err.message });

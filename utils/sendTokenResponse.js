@@ -1,6 +1,18 @@
 const jwt = require("jsonwebtoken");
 
-const sendTokenResponse = (user, statusCode, res) => {
+const sendTokenResponse = async(user, statusCode, res) => {
+  
+  try {
+    user.lastActive = Date.now();
+    await user.save({ validateBeforeSave: false }); 
+    
+    // 2. Log the successful authentication
+    const action = statusCode === 201 ? "Account Registered" : "User Logged In";
+    logActivity(user._id, action, "auth");
+  } catch (err) {
+    console.error("Activity Update Error:", err.message);
+  }
+
   //  Create token
   const token = jwt.sign({ id: user._id }, process.env.secret_key, {
     expiresIn: "7d",
@@ -25,6 +37,7 @@ const sendTokenResponse = (user, statusCode, res) => {
         email: user.email,
         name: user.name,
         avatar: user.avatar,
+        role: user.role, 
         onboarded: user.onboarded,
         watchlist: user.watchlist,
         genres: user.genres || [],

@@ -1,4 +1,5 @@
 const User = require('../models/user');
+const logActivity = require('../utils/logger');
 
 // Get Watchlist
 exports.getWatchlist = async (req, res) => {
@@ -22,6 +23,9 @@ exports.addToWatchlist = async (req, res) => {
       { new: true }
     );
 
+    logActivity(req.user._id, `Added ${movie.title}  to watchlist`, "profile");
+
+
     res.status(200).json(user.watchlist);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -38,6 +42,8 @@ exports.removeFromWatchlist = async (req, res) => {
       { $pull: { watchlist: { id: parseInt(movieId) } } },
       { new: true }
     );
+
+    logActivity(req.user._id, `Removed movie ID: ${movieId} from watchlist`, "profile");
 
     res.status(200).json(user.watchlist);
   } catch (error) {

@@ -1,9 +1,12 @@
 const express = require("express");
 const router = express.Router();
-const aiController = require("../controllers/aiController");
+const {getAiRecommendation, syncWeeklySpotlight,} = require("../controllers/aiController");
 const { protect } = require('../middleware/authMiddleware');
+const updateLastActive = require("../middleware/updateActive");
 
-router.post("/process",protect, aiController.getAiRecommendation);
-router.get("/weekly-spotlight", protect, aiController.syncWeeklySpotlight)
+router.use(updateLastActive);
+
+router.post("/process",protect, updateLastActive, getAiRecommendation);
+router.get("/weekly-spotlight", protect,updateLastActive, syncWeeklySpotlight)
 
 module.exports = router;

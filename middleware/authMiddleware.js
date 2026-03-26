@@ -24,6 +24,13 @@ const protect = async (req, res, next) => {
     // 4. Attach user to request
     req.user = await User.findById(decoded.id).select('-password');
 
+    if (req.user.status === 'banned') {
+    return res.status(403).json({ 
+        success: false, 
+        message: 'Your account has been terminated due to a violation of our terms.' 
+    });
+}
+
     if (!req.user) {
       return res.status(401).json({ success: false, message: 'User no longer exists' });
     }
@@ -35,4 +42,12 @@ const protect = async (req, res, next) => {
   }
 };
 
-module.exports = { protect };
+const admin = (req, res, next) => {
+  if (req.user && req.user.role === 'admin') {
+    next();
+  } else {
+    res.status(401).json({ message: "Not authorized as an admin" });
+  }
+};
+
+module.exports = { protect, admin };

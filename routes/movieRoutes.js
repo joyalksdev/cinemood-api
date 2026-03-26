@@ -2,6 +2,8 @@ const express = require('express');
 const router = express.Router();
 const movieController = require('../controllers/movieController');
 const { protect } = require('../middleware/authMiddleware');
+const updateLastActive = require('../middleware/updateActive');
+router.use(updateLastActive);
 
 router.get('/personalized', protect, movieController.getPersonalizedMovies);
 router.get('/browse', protect, movieController.getBrowseMovies);

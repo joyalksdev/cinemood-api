@@ -1,7 +1,8 @@
 const User = require("../models/user");
 const bcrypt = require("bcrypt");
-const jwt = require("jsonwebtoken");
 const sendTokenResponse = require("../utils/sendTokenResponse");
+const crypto = require("crypto");
+const sendEmail = require("../utils/sendEmail");
 
 const registerUser = async (req, res) => {
   try {
@@ -25,7 +26,8 @@ const registerUser = async (req, res) => {
 
     const user = await User.create({ email, password: hashedPassword });
 
-    sendTokenResponse(user, 201, res);
+    await sendTokenResponse(user, 201, res);
+
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -41,14 +43,23 @@ const loginUser = async (req, res) => {
         .json({ success: false, message: "Please provide email and password" });
     }
 
-    const user = await User.findOne({ email }).select("+password"); 
+    const user = await User.findOne({ email }).select("+password +role"); 
+
+    if (user && (user.status === 'banned' || user.status === 'suspended')) {
+      return res.status(403).json({ 
+        success: false, 
+        message: `Access denied. Your account is currently ${user.status}.` 
+      });
+    }
+
     if (!user || !(await bcrypt.compare(password, user.password))) {
       return res
         .status(400)
         .json({ success: false, message: "Invalid credentials" });
     }
 
-    sendTokenResponse(user, 200, res);
+    await sendTokenResponse(user, 200, res);
+
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -63,8 +74,6 @@ const logoutUser = async (req, res) => {
   res.status(200).json({ success: true, message: "Logged out" });
 };
 
-const crypto = require("crypto");
-const sendEmail = require("../utils/sendEmail");
 
 const forgotPassword = async (req, res) => {
   try {
@@ -174,7 +183,8 @@ const resetPassword = async (req, res) => {
     await user.save();
 
     // 4. Log user in immediately
-    sendTokenResponse(user, 200, res);
+   await sendTokenResponse(user, 200, res);
+   
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }

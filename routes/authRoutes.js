@@ -6,6 +6,6 @@ router.post('/register', registerUser);
 router.post('/login', loginUser);
 router.post('/logout', logoutUser);
 router.post('/forgotpassword', forgotPassword);
-router.put('/resetpassword/:resettoken', resetPassword); // PUT is better for updates
+router.put('/resetpassword/:resettoken', resetPassword); 
 
 module.exports = router;

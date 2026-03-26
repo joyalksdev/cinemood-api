@@ -1,5 +1,6 @@
 const axios = require("axios");
 const User = require("../models/user");
+const logActivity = require("../utils/logger");
 
 const apiKey = process.env.GEMINI_API_KEY;
 const apiKey2 = process.env.GEMINI_API_KEY_2; 
@@ -67,6 +68,8 @@ exports.getAiRecommendation = async (req, res) => {
 
       const movieResults = await Promise.all(moviePromises);
       const finalMovies = movieResults.filter(movie => movie !== null);
+
+      logActivity(req.user._id, `Searched for vibe: ${data}`, "search")
 
       return res.status(200).json({
         success: true,
@@ -158,6 +161,8 @@ exports.syncWeeklySpotlight = async (req, res) => {
     user.markModified('weeklySpotlight'); 
     await user.save();
     console.log(`Spotlight updated successfully for ${user.name}`);
+
+    logActivity(user._id, `Generated new Weekly Spotlight: ${aiParsed.themeTitle}`, "search");
 
     return res.status(200).json({
       success: true,

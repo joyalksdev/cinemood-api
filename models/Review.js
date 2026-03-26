@@ -6,6 +6,8 @@ const reviewSchema = new mongoose.Schema({
   userName: { type: String, required: true },
   rating: { type: Number, min: 1, max: 10, required: true },
   content: { type: String, required: true },
+  isFlagged: { type: Boolean, default: false },
+  reportCount: { type: Number, default: 0 }
 }, { timestamps: true });
 
 module.exports = mongoose.model("Review", reviewSchema);
