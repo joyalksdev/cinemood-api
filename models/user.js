@@ -40,6 +40,7 @@ const userSchema = new mongoose.Schema(
     weeklySpotlight: {
       themeTitle: String,
       themeDescription: String,
+      aiInsight: String,
       movies: [{ type: Object }],
       generatedAt: { type: Date, default: Date.now },
     },

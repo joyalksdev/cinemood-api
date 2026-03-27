@@ -1,32 +1,24 @@
 const nodemailer = require("nodemailer");
 
 const sendEmail = async (options) => {
-  // 1. Create the transporter using your Ethereal credentials
+  // Use Gmail service instead of manual host/port
   const transporter = nodemailer.createTransport({
-    host: process.env.EMAIL_HOST,
-    port: process.env.EMAIL_PORT,
-    secure: false, // true for 465, false for other ports like 587
+    service: "gmail",
     auth: {
-      user: process.env.EMAIL_USER,
-      pass: process.env.EMAIL_PASSWORD,
+      user: process.env.GMAIL_USER, // Your gmail address
+      pass: process.env.GMAIL_APP_PASSWORD, // The 16-character App Password
     },
   });
 
-  // 2. Define the email options
   const message = {
-    from: `${process.env.FROM_NAME} <${process.env.FROM_EMAIL}>`,
+    from: `CineMood Engine <${process.env.GMAIL_USER}>`,
     to: options.email,
     subject: options.subject,
-    text: options.message,
-    html: options.message, // This allows the <h1> and <a> tags to work
+    html: options.message, // Your beautiful HTML template from authController
   };
 
-  // 3. Send the actual email
   const info = await transporter.sendMail(message);
-
-  console.log("Message sent: %s", info.messageId);
-  // Preview URL for Ethereal (very helpful for dev)
-  console.log("Preview URL: %s", nodemailer.getTestMessageUrl(info));
+  console.log("Mail delivered to:", options.email);
 };
 
 module.exports = sendEmail;
