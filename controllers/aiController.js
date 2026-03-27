@@ -69,7 +69,7 @@ exports.getAiRecommendation = async (req, res) => {
       const movieResults = await Promise.all(moviePromises);
       const finalMovies = movieResults.filter(movie => movie !== null);
 
-      logActivity(req.user._id, `Searched for vibe: ${data}`, "search")
+      logActivity(req.user._id, `Nueral AI Search: ${data}`, "search")
 
       return res.status(200).json({
         success: true,
