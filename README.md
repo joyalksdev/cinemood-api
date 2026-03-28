@@ -1,15 +1,151 @@
-🎬 CineMood Backend - Neural EngineThe CineMood Backend is a high-performance Node.js/Express API designed to power an AI-integrated movie recommendation platform. It leverages Google Gemini AI for personalized "Neural" suggestions and TMDB for real-time cinematic data.🚀 Core FeaturesNeural AI Recommendations: Integration with Gemini AI to suggest films based on user mood, language, and watchlist history.Advanced User Management: Full authentication flow (JWT/Bcrypt) including onboarding and account recovery.Community Reviews: A local MongoDB-based rating system with automated moderation (reporting/flagging).Smart Notifications: A tiered alert system for targeted user messages and global system updates.Admin Control Center: Specialized routes for banning users, dismissing reports, and viewing site-wide activity logs.Security Suite: Multi-tier rate limiting (Auth/Support/Global) and HTTP-only cookie-based session management.🛠️ Tech StackRuntime: Node.jsFramework: Express.jsDatabase: MongoDB (via Mongoose)AI Engine: Google Gemini (Generative AI)Security: JWT, Bcrypt, Express-Rate-LimitCommunication: Nodemailer (Gmail SMTP)📂 Architecture OverviewShutterstockPlaintext├── controllers/      # Business logic (AI, Auth, Movies, Admin, etc.)
-├── models/           # Mongoose schemas (User, Review, Notification, Activity)
-├── routes/           # Express router definitions
-├── middleware/       # Auth (protect/admin), Error handling, Rate limiters
-├── utils/            # Shared utilities (Email, Logger, Token Response)
-└── index.js          # Entry point and middleware mounting
-🔒 Security & MiddlewareMiddlewarePurposeProtectVerifies JWT from HTTP-only cookies.AdminRestricts access to user roles with admin privileges.AuthLimiterStops brute-force attacks (5 attempts/hour).SupportLimiterPrevents Gmail spam on the contact form.ErrorHandlerStandardizes JSON error responses across the API.📡 API Endpoints (Quick Reference)AuthenticationPOST /api/auth/register - Create a new account.POST /api/auth/login - Secure login with cookie-session.POST /api/auth/forgotpassword - Trigger recovery email.Neural & MoviesPOST /api/ai/process - Get AI movie recommendations.GET /api/movies/personalized - Fetch movies based on user preferences.GET /api/movies/trending - Fetch global trending movies (Public).Community & UserPOST /api/reviews - Add a movie review.GET /api/user/me - Fetch logged-in user profile.GET /api/user/notifications - Sync personal neural alerts.🛠️ Environmental SetupTo run this engine locally, create a .env file in the root directory:Code snippetPORT=5000
+# 🎬 CineMood Backend - Neural Engine
+
+The **CineMood Backend** is a high-performance Node.js/Express API designed to power an AI-integrated movie recommendation platform.
+
+It leverages **Google Gemini AI** for personalized *"Neural"* suggestions and **TMDB** for real-time cinematic data.
+
+---
+
+## 🚀 Core Features
+
+### 🧠 Neural AI Recommendations
+- Integration with Google Gemini AI
+- Suggests movies based on:
+  - User mood
+  - Language preferences
+  - Watchlist history
+
+### 👤 Advanced User Management
+- Full authentication system using JWT & Bcrypt
+- Features include:
+  - User onboarding
+  - Secure login
+  - Password recovery
+
+### ⭐ Community Reviews
+- MongoDB-based rating & review system
+- Built-in moderation:
+  - Report system
+  - Flagging inappropriate content
+
+### 🔔 Smart Notifications
+- Tiered notification system:
+  - Personalized alerts
+  - Global announcements
+
+### 🛡️ Admin Control Center
+- Admin-only routes for:
+  - User banning
+  - Report handling
+  - Activity monitoring
+
+### 🔒 Security Suite
+- Multi-layer rate limiting:
+  - Auth limiter
+  - Support limiter
+  - Global limiter
+- HTTP-only cookie-based sessions
+
+---
+
+## 🛠️ Tech Stack
+
+| Category       | Technology |
+|---------------|-----------|
+| Runtime       | Node.js |
+| Framework     | Express.js |
+| Database      | MongoDB (Mongoose) |
+| AI Engine     | Google Gemini |
+| Security      | JWT, Bcrypt, Express-Rate-Limit |
+| Communication | Nodemailer (Gmail SMTP) |
+
+---
+
+## 📂 Architecture Overview
+├── controllers/ # Business logic (AI, Auth, Movies, Admin, etc.)
+├── models/ # Mongoose schemas (User, Review, Notification, Activity)
+├── routes/ # Express router definitions
+├── middleware/ # Auth, Error handling, Rate limiters
+├── utils/ # Shared utilities (Email, Logger, Token Response)
+└── index.js # Entry point
+
+
+---
+
+## 🔒 Security & Middleware
+
+| Middleware      | Purpose |
+|----------------|--------|
+| Protect        | Verifies JWT from HTTP-only cookies |
+| Admin          | Restricts access to admin users |
+| AuthLimiter    | Prevents brute-force attacks (5 attempts/hour) |
+| SupportLimiter | Prevents email spam |
+| ErrorHandler   | Standardized JSON error responses |
+
+---
+
+## 📡 API Endpoints
+
+### 🔐 Authentication
+- `POST /api/auth/register` → Create account  
+- `POST /api/auth/login` → Login (cookie session)  
+- `POST /api/auth/forgotpassword` → Password recovery  
+
+### 🎥 Neural & Movies
+- `POST /api/ai/process` → AI movie recommendations  
+- `GET /api/movies/personalized` → Personalized movies  
+- `GET /api/movies/trending` → Trending movies (Public)  
+
+### 👥 Community & User
+- `POST /api/reviews` → Add review  
+- `GET /api/user/me` → Get user profile  
+- `GET /api/user/notifications` → Get notifications  
+
+---
+
+## 🛠️ Environment Setup
+
+Create a `.env` file in the root directory:
+
+```env
+PORT=5000
 MONGO_URI=your_mongodb_connection_string
-secret_key=your_jwt_secret
+SECRET_KEY=your_jwt_secret
 TMDB_API_KEY=your_tmdb_key
 GEMINI_API_KEY=your_google_ai_key
 GMAIL_USER=your_email@gmail.com
-GMAIL_APP_PASSWORD=your_16_char_app_pass
+GMAIL_APP_PASSWORD=your_16_char_app_password
 NODE_ENV=development
-📝 Activity TrackingCineMood includes a built-in Activity Logger that tracks user engagement without blocking main thread performance. This data populates the Admin Dashboard with stats on searches, logins, and community interaction.
+--
+
+📊 Activity Tracking
+
+CineMood includes a built-in Activity Logger that tracks:
+
+User logins
+Searches
+Reviews & interactions
+
+⚡ Runs asynchronously to avoid blocking performance
+📈 Data is used in the Admin Dashboard for analytics
+
+⚡ Getting Started
+
+# Install dependencies
+npm install
+
+# Run server
+npm run dev
+dev
+🤝 Contributing
+
+Pull requests are welcome!
+For major changes, please open an issue first.
+
+📄 License
+
+This project is licensed under the MIT License.
+
+💡 Author
+
+Built with ❤️ by Joyal
