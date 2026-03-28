@@ -17,6 +17,7 @@ const supportRoutes = require('./routes/supportRoutes');
 const updateLastActive = require("./middleware/updateActive");
 const { errorHandler } = require("./middleware/errorMiddleware");
 
+// establishes the connection to mongodb before the app starts listening
 connectDB()
 
 const app = express()
@@ -25,11 +26,12 @@ app.use(express.json())
 
 app.use(cookieParser())
 
+// global middleware to track user activity on every incoming request
 app.use(updateLastActive)
 
 app.use(cors({
     origin: process.env.FRONTEND_URL, 
-    credentials: true,
+    credentials: true, // required to accept jwt cookies from the frontend
 }));
 
 app.use('/api/ai', aiRoutes);
@@ -41,7 +43,7 @@ app.use('/api/watchlist', watchlistRoutes);
 app.use('/api/reviews', reviewRoutes);
 app.use('/api/support', supportRoutes);
 
-
+// catches any errors thrown in the routes to keep the process from crashing
 app.use(errorHandler)
 
 app.get('/', (req,res)=>{

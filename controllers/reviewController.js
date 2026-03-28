@@ -1,28 +1,28 @@
 const Review = require("../models/Review");
 const logActivity = require("../utils/logger");
 
-// Add a new review to a movie
+// Creates a new community rating
 exports.addReview = async (req, res) => {
   try {
     const { movieId, rating, content, movieTitle } = req.body;
 
-    // FIX: Accessing 'name' from your User model via req.user
+    // Use the name from the authenticated user object
     const authorName = req.user.name || "CineMood User";
 
     const newReview = new Review({
       movieId,
       userId: req.user._id,
-      userName: authorName, // Saves 'name' from User to 'userName' in Review
+      userName: authorName, 
       rating: Number(rating),
       content: content.trim()
     });
 
     await newReview.save();
 
-    // FIX: Pull movieTitle from req.body to prevent the 500 ReferenceError
+    // Fallback title to prevent crashes if movieTitle is missing
     const displayTitle = movieTitle || `Movie ID: ${movieId}`;
     
-    // Log activity safely
+    // Track the action in the user's activity feed
     if (typeof logActivity === 'function') {
       logActivity(req.user._id, `Posted a ${rating}-star review for ${displayTitle}`, "profile");
     }
@@ -34,9 +34,10 @@ exports.addReview = async (req, res) => {
   }
 };
 
-// Get reviews from our database for a specific movie
+// Fetches reviews specifically from your MongoDB, not TMDB
 exports.getLocalReviews = async (req, res) => {
   try {
+    // Sort by newest first
     const reviews = await Review.find({ movieId: req.params.movieId }).sort({ createdAt: -1 });
     res.json({ success: true, reviews });
   } catch (err) {
@@ -44,6 +45,7 @@ exports.getLocalReviews = async (req, res) => {
   }
 };
 
+// Increments the report counter for a specific review
 exports.reportReview = async (req, res) => {
   try {
     const review = await Review.findById(req.params.id);
@@ -51,7 +53,7 @@ exports.reportReview = async (req, res) => {
 
     review.reportCount += 1;
     
-    // Auto-flag if reports get high
+    // Automated moderation: flags the review for admin review after 3 reports
     if (review.reportCount >= 3) {
       review.isFlagged = true;
     }
@@ -66,12 +68,13 @@ exports.reportReview = async (req, res) => {
   }
 };
 
+// Admin action to clear flags and reset report counts
 exports.dismissReports = async (req, res) => {
   try {
     const review = await Review.findById(req.params.id);
     if (!review) return res.status(404).json({ success: false, message: "Review not found" });
 
-    // Reset the flags
+    // Clears the moderation status
     review.reportCount = 0;
     review.isFlagged = false;
 

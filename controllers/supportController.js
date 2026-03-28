@@ -1,16 +1,18 @@
 const sendEmail = require("../utils/sendEmail");
 
+// Handles user support requests via email
 exports.contactSupport = async (req, res) => {
   try {
     const { name, email, message } = req.body;
 
+    // Basic validation to prevent empty submissions
     if (!name || !email || !message) {
       return res.status(400).json({ success: false, message: "Missing fields" });
     }
 
-    // 1. Notify YOU (The Admin)
+    // 1. Alert the Admin (You)
     const adminMailOptions = {
-      email: process.env.GMAIL_USER,
+      email: process.env.GMAIL_USER, // Sends to your own inbox
       subject: `🚨 [SUPPORT] Message from ${name}`,
       message: `
         <div style="background-color: #050505; color: #ffffff; padding: 30px; font-family: sans-serif; border: 1px solid #FFC509; border-radius: 15px;">
@@ -24,9 +26,9 @@ exports.contactSupport = async (req, res) => {
       `,
     };
 
-    // 2. Notify THE USER (Confirmation/Carbon Copy)
+    // 2. Alert the User (Confirmation Receipt)
     const userMailOptions = {
-      email: email,
+      email: email, // Sends to the user who filled the form
       subject: "We've received your message - CineMood",
       message: `
         <div style="background-color: #050505; color: #ffffff; padding: 30px; font-family: sans-serif; border-radius: 15px;">
@@ -40,12 +42,19 @@ exports.contactSupport = async (req, res) => {
       `,
     };
 
-    // Send both emails
-    await sendEmail(adminMailOptions);
-    await sendEmail(userMailOptions);
+    /**
+     * Promise.all: Triggers both emails simultaneously.
+     * This is slightly faster than using 'await' on them separately.
+     */
+    await Promise.all([
+      sendEmail(adminMailOptions),
+      sendEmail(userMailOptions)
+    ]);
 
     res.status(200).json({ success: true, message: "Transmission successful" });
   } catch (error) {
+    // Hidden logging for debugging, generic message for user security
+    console.error("Support Mail Error:", error); 
     res.status(500).json({ success: false, message: "Mail server error" });
   }
 };

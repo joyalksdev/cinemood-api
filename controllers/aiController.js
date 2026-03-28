@@ -7,10 +7,14 @@ const apiKey2 = process.env.GEMINI_API_KEY_2;
 const tmdbToken = process.env.TMDB_TOKEN;
 const tmdbBaseUrl = process.env.TMDB_BASE_URL;
 
+/**
+ * semantic search: uses ai to understand "vibes" instead of just keywords.
+ * flow: user input -> gemini (json titles) -> tmdb (metadata) -> frontend.
+ */
 exports.getAiRecommendation = async (req, res) => {
   try {
     const { task, data } = req.body;
-    const model = "gemini-2.5-flash"; 
+    const model = "gemini-2.5-flash";
     const geminiUrl = `https://generativelanguage.googleapis.com/v1/models/${model}:generateContent?key=${apiKey}`;
 
     const currentTask = task || "semantic_search";
@@ -18,7 +22,7 @@ exports.getAiRecommendation = async (req, res) => {
 
     switch (currentTask) {
       case "semantic_search":
-       promptText = `You are the CineMood Neural Engine v2.5, a high-performance semantic movie discovery system.
+        promptText = `You are the CineMood Neural Engine v2.5, a high-performance semantic movie discovery system.
         
         INPUT VIBE/CONTEXT: "${data}"
 
@@ -40,26 +44,30 @@ exports.getAiRecommendation = async (req, res) => {
         }`;
         break;
       default:
-        return res.status(400).json({ success: false, message: "Invalid task" });
+        return res.status(400).json({ success: false, message: "Invalid task type" });
     }
 
     const aiRes = await axios.post(geminiUrl, {
       contents: [{ parts: [{ text: promptText }] }],
     });
 
+    // extracts the text part from the nested gemini response object
     const rawOutput = aiRes.data.candidates[0].content.parts[0].text.trim();
+    // strips markdown code blocks if the ai included them in the output
     const cleanJsonString = rawOutput.replace(/```json|```/g, "").trim();
     const aiParsed = JSON.parse(cleanJsonString);
 
     if (currentTask === "semantic_search") {
       const titles = aiParsed.movieTitles;
+      
+      // fires off multiple parallel requests to tmdb to get posters/ratings for each title
       const moviePromises = titles.map(async (title) => {
         try {
           const tmdbRes = await axios.get(
             `${tmdbBaseUrl}/search/movie?query=${encodeURIComponent(title)}&include_adult=false`,
             { headers: { Authorization: `Bearer ${tmdbToken}` } }
           );
-          return tmdbRes.data.results[0]; 
+          return tmdbRes.data.results[0]; // takes the top search result from tmdb
         } catch (err) {
           console.error(`TMDB error for ${title}:`, err.message);
           return null;
@@ -69,7 +77,7 @@ exports.getAiRecommendation = async (req, res) => {
       const movieResults = await Promise.all(moviePromises);
       const finalMovies = movieResults.filter(movie => movie !== null);
 
-      logActivity(req.user._id, `Nueral AI Search: ${data}`, "search")
+      logActivity(req.user._id, `Neural AI Search: ${data}`, "search")
 
       return res.status(200).json({
         success: true,
@@ -85,7 +93,10 @@ exports.getAiRecommendation = async (req, res) => {
   }
 };
 
-
+/**
+ * weekly spotlight: generates a personalized theme based on a user's watchlist.
+ * includes a 7-day caching mechanism to reduce api costs and database writes.
+ */
 exports.syncWeeklySpotlight = async (req, res) => {
   try {
     const userId = req.user.id;
@@ -94,6 +105,7 @@ exports.syncWeeklySpotlight = async (req, res) => {
 
     const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
 
+    // cache check: only regenerate if the spotlight is older than 7 days or missing
     if (user.weeklySpotlight && 
         user.weeklySpotlight.movies?.length > 0 && 
         user.weeklySpotlight.generatedAt > sevenDaysAgo) {
@@ -102,7 +114,7 @@ exports.syncWeeklySpotlight = async (req, res) => {
         cached: true,
         themeTitle: user.weeklySpotlight.themeTitle,
         themeDescription: user.weeklySpotlight.themeDescription,
-        aiInsight: user.weeklySpotlight.aiInsight, // ADDED THIS
+        aiInsight: user.weeklySpotlight.aiInsight,
         movies: user.weeklySpotlight.movies 
       });
     }
@@ -111,12 +123,12 @@ exports.syncWeeklySpotlight = async (req, res) => {
       return res.status(200).json({ success: false, message: "Add movies to your watchlist first!" });
     }
 
+    // feeds current watchlist titles to the ai to analyze user taste trends
     const titles = user.watchlist.map(movie => movie.title || movie.original_title).join(", ");
 
-    const model = "gemini-2.5-flash"; // Note: gemini-2.5 doesn't exist yet, stick to 1.5-flash or pro
+    const model = "gemini-2.5-flash"; 
     const geminiUrl = `https://generativelanguage.googleapis.com/v1/models/${model}:generateContent?key=${apiKey2}`;
 
-    // UPDATED PROMPT to include aiInsight
     const promptText = `You are a cinematic genius. The user has these movies in their watchlist: "${titles}".
     TASK:
     1. Identify a trending aesthetic/genre in their taste.
@@ -132,6 +144,7 @@ exports.syncWeeklySpotlight = async (req, res) => {
 
     const moviePromises = aiParsed.movieTitles.map(async (title) => {
       try {
+        // regex cleans numbering (e.g., "1. Inception") or years from the ai response
         const cleanTitle = title.replace(/^\d+\.\s*/, "").replace(/\s*\(\d{4}\)$/, "").trim();
         const tmdbRes = await axios.get(
           `${tmdbBaseUrl}/search/movie?query=${encodeURIComponent(cleanTitle)}&include_adult=false`,
@@ -145,15 +158,16 @@ exports.syncWeeklySpotlight = async (req, res) => {
 
     const movies = (await Promise.all(moviePromises)).filter(m => m != null);
 
-    // Update and Save to MongoDB
+    // persists the generated spotlight to the user profile for the weekly cache
     user.weeklySpotlight = {
       themeTitle: aiParsed.themeTitle,
       themeDescription: aiParsed.themeDescription,
-      aiInsight: aiParsed.aiInsight, // ADDED THIS
+      aiInsight: aiParsed.aiInsight,
       movies: movies,
       generatedAt: new Date()
     };
 
+    // tells mongoose that a mixed/nested object has changed so it saves correctly
     user.markModified('weeklySpotlight'); 
     await user.save();
 
@@ -162,7 +176,7 @@ exports.syncWeeklySpotlight = async (req, res) => {
       cached: false,
       themeTitle: user.weeklySpotlight.themeTitle,
       themeDescription: user.weeklySpotlight.themeDescription,
-      aiInsight: user.weeklySpotlight.aiInsight, // ADDED THIS
+      aiInsight: user.weeklySpotlight.aiInsight,
       movies: user.weeklySpotlight.movies
     });
 

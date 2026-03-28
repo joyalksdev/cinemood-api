@@ -21,11 +21,13 @@ const registerUser = async (req, res) => {
         .json({ success: false, message: "User already exists" });
     }
 
+    // hashes the password before saving so we never store plain text in the db
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
     const user = await User.create({ email, password: hashedPassword });
 
+    // helper function that creates a jwt, sets a cookie, and sends the response
     await sendTokenResponse(user, 201, res);
 
   } catch (error) {
@@ -43,8 +45,10 @@ const loginUser = async (req, res) => {
         .json({ success: false, message: "Please provide email and password" });
     }
 
+    // explicitly selects hidden fields (password/role) needed for validation logic
     const user = await User.findOne({ email }).select("+password +role"); 
 
+    // gatekeeper: prevents login if the admin has flagged the account
     if (user && (user.status === 'banned' || user.status === 'suspended')) {
       return res.status(403).json({ 
         success: false, 
@@ -52,6 +56,7 @@ const loginUser = async (req, res) => {
       });
     }
 
+    // compares the provided plain text password with the stored hash
     if (!user || !(await bcrypt.compare(password, user.password))) {
       return res
         .status(400)
@@ -65,8 +70,8 @@ const loginUser = async (req, res) => {
   }
 };
 
-// Logout function to clear the cookie
 const logoutUser = async (req, res) => {
+  // overwrites the current token cookie with a dummy value that expires instantly
   res.cookie("token", "none", {
     expires: new Date(Date.now() + 10 * 1000),
     httpOnly: true,
@@ -79,7 +84,6 @@ const forgotPassword = async (req, res) => {
   try {
     const { email } = req.body;
 
-    // 1. Check if user exists
     const user = await User.findOne({ email });
 
     if (!user) {
@@ -89,25 +93,24 @@ const forgotPassword = async (req, res) => {
       });
     }
 
-    // 2. Generate unhashed reset token
+    // generates a random string to send to the user's email
     const resetToken = crypto.randomBytes(20).toString("hex");
 
-    // 3. Hash token and set to resetPasswordToken field in DB
+    // security: hashes the token before storing it in the db. 
+    // if the db is leaked, the attacker still doesn't have the actual reset string.
     user.resetPasswordToken = crypto
       .createHash("sha256")
       .update(resetToken)
       .digest("hex");
 
-    // 4. Set token expiry (10 minutes from now)
+    // sets a short window for the token to be valid (10 minutes)
     user.resetPasswordExpire = Date.now() + 10 * 60 * 1000;
 
-    // Save user with new fields (bypass password validation if you have any)
     await user.save({ validateBeforeSave: false });
 
-    // 5. Create the reset URL for your React Frontend
     const resetUrl = `${process.env.FRONTEND_URL}/reset-password/${resetToken}`;
 
-    // 6. Define the email content
+    // inline html for a professional, branded email experience
     const message = `
     <div style="background-color: #050505; color: #ffffff; padding: 40px; font-family: sans-serif; border-radius: 20px; max-width: 600px; margin: auto; border: 1px solid #1a1a1a;">
         <h1 style="color: #FFC509; font-size: 28px; letter-spacing: -1px;">🎬CineMood</h1>
@@ -125,7 +128,6 @@ const forgotPassword = async (req, res) => {
     `;
 
     try {
-      // 7. Attempt to send the email
       await sendEmail({
         email: user.email,
         subject: "Password Reset Request - CineMood",
@@ -138,8 +140,8 @@ const forgotPassword = async (req, res) => {
       });
 
     } catch (err) {
-      // 8. If email fails, clear the token fields in DB and throw error
       console.error("Email Error:", err);
+      // cleanup: if the email fails, we don't want a "ghost" reset token sitting in the db
       user.resetPasswordToken = undefined;
       user.resetPasswordExpire = undefined;
       await user.save({ validateBeforeSave: false });
@@ -157,7 +159,7 @@ const forgotPassword = async (req, res) => {
 
 const resetPassword = async (req, res) => {
   try {
-    // 1. Hash the token from the URL to compare with DB
+    // hashes the token provided in the url to see if it matches our stored hashed version
     const resetPasswordToken = crypto
       .createHash("sha256")
       .update(req.params.resettoken)
@@ -165,24 +167,23 @@ const resetPassword = async (req, res) => {
 
     const user = await User.findOne({
       resetPasswordToken,
-      resetPasswordExpire: { $gt: Date.now() }, // Must be in the future
+      resetPasswordExpire: { $gt: Date.now() }, // ensures the token hasn't timed out
     });
 
     if (!user) {
       return res.status(400).json({ success: false, message: "Invalid or expired token" });
     }
 
-    // 2. Set new password
     const salt = await bcrypt.genSalt(10);
     user.password = await bcrypt.hash(req.body.password, salt);
     
-    // 3. Clear reset fields
+    // clears the reset fields so the same link can't be used twice
     user.resetPasswordToken = undefined;
     user.resetPasswordExpire = undefined;
 
     await user.save();
 
-    // 4. Log user in immediately
+    // logs them in immediately after reset for a smoother user experience
    await sendTokenResponse(user, 200, res);
    
   } catch (error) {
@@ -190,5 +191,4 @@ const resetPassword = async (req, res) => {
   }
 }
 
-// Add these to your module.exports
 module.exports = { registerUser, loginUser, logoutUser, forgotPassword, resetPassword };

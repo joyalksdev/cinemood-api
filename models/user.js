@@ -1,5 +1,9 @@
 const mongoose = require("mongoose");
 
+/**
+ * User Schema: The central data structure for CineMood.
+ * Defines everything from authentication to personalized AI spotlights.
+ */
 const userSchema = new mongoose.Schema(
   {
     email: {
@@ -12,19 +16,24 @@ const userSchema = new mongoose.Schema(
     password: {
       type: String,
       required: true,
+      select: false, // Security: Automatically excludes password from queries by default
     },
+    
+    // --- AUTHENTICATION RECOVERY ---
     resetPasswordToken: String,
     resetPasswordExpire: Date,
+
+    // --- PROFILE & PREFERENCES ---
     name: {
       type: String,
-      default: "", // This will be filled during onboarding
+      default: "", // Filled during the onboarding phase
     },
     avatar: {
       type: String,
       default: "",
     },
     genres: {
-      type: [Number],
+      type: [Number], // Stores TMDB genre IDs for matching logic
       default: [],
     },
     language: {
@@ -35,15 +44,20 @@ const userSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
-    watchlist: [{ type: Object }],
+
+    // --- PERSONALIZED MOVIE DATA ---
+    watchlist: [{ type: Object }], // Flexible storage for TMDB movie objects
 
     weeklySpotlight: {
       themeTitle: String,
       themeDescription: String,
       aiInsight: String,
       movies: [{ type: Object }],
+      // Used by the controller to manage the 7-day caching cycle
       generatedAt: { type: Date, default: Date.now },
     },
+
+    // --- SYSTEM & MODERATION ---
     role: {
       type: String,
       enum: ["user", "admin"],
@@ -56,14 +70,17 @@ const userSchema = new mongoose.Schema(
     },
     warnings: {
       type: Number,
-      default: 0,
+      default: 0, // Auto-escalates to 'suspended' in controller when >= 3
     },
     lastActive: {
       type: Date,
-      default: Date.now
+      default: Date.now // Updated via updateActive.js middleware
     }
   },
-  { timestamps: true },
+  { 
+    // Automatically creates 'createdAt' and 'updatedAt' fields
+    timestamps: true 
+  },
 );
 
 module.exports = mongoose.model("User", userSchema);

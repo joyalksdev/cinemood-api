@@ -2,9 +2,11 @@
 const axios = require("axios");
 const logActivity = require("../utils/logger");
 
+// verification logs to ensure env variables are loading correctly in production
 console.log("BASE URL CHECK:", process.env.TMDB_BASE_URL);
 console.log("TOKEN CHECK:", process.env.TMDB_TOKEN ? "Exists" : "MISSING");
 
+// axios instance configured with tmdb base url and bearer token for all requests
 const tmdb = axios.create({
   baseURL: process.env.TMDB_BASE_URL,
   headers: {
@@ -12,21 +14,28 @@ const tmdb = axios.create({
   },
 });
 
-// Helper to filter results (Keeping it lean for the frontend)
+/**
+ * filterResults: trims the massive tmdb response down to exactly what the frontend needs.
+ * helps reduce payload size and ensures consistent property names (like 'rating').
+ */
 const filterResults = (results) =>
   results.map((m) => ({
     id: m.id,
     title: m.title || m.name,
     poster_path: m.poster_path,
     backdrop_path: m.backdrop_path,
-    rating: m.vote_average, // Keep as rating for your MovieRow fix
-    overview: m.overview, // <--- ADD THIS
-    release_date: m.release_date || m.first_air_date, // <--- ADD THIS
+    rating: m.vote_average, 
+    overview: m.overview, 
+    release_date: m.release_date || m.first_air_date, 
     media_type: m.media_type || (m.title ? "movie" : "tv"),
   }));
 
 // --- CONTROLLERS ---
 
+/**
+ * fetches movies based on the genres and language saved in the user's profile.
+ * this is the core of the "For You" section.
+ */
 exports.getPersonalizedMovies = async (req, res) => {
   try {
     const genres = req.user.genres?.join(",") || "";
@@ -36,11 +45,14 @@ exports.getPersonalizedMovies = async (req, res) => {
     );
     res.json(filterResults(data.results));
   } catch (err) {
-    console.error("TMDB ERROR:", err.response?.data || err.message); // THIS LINE IS KEY
+    console.error("TMDB ERROR:", err.response?.data || err.message); 
     res.status(500).json({ message: err.message });
   }
 };
 
+/**
+ * dynamic discover: allows users to filter by specific genres, language, or custom sorting.
+ */
 exports.getBrowseMovies = async (req, res) => {
   try {
     const { genre, language, sort, page = 1 } = req.query;
@@ -84,6 +96,7 @@ exports.getNowPlaying = async (req, res) => {
   }
 };
 
+// specialized filter for korean dramas using language code 'ko'
 exports.getKDramas = async (req, res) => {
   try {
     const { data } = await tmdb.get(
@@ -95,6 +108,7 @@ exports.getKDramas = async (req, res) => {
   }
 };
 
+// specialized filter for anime using genre id 16 (animation) and language code 'ja'
 exports.getAnime = async (req, res) => {
   try {
     const { data } = await tmdb.get(
@@ -115,6 +129,10 @@ exports.getTrending = async (req, res) => {
   }
 };
 
+/**
+ * multi-search: searches across movies, tv, and people simultaneously.
+ * filtered here to focus primarily on movies and actors/directors.
+ */
 exports.searchMulti = async (req, res) => {
   try {
     const { query } = req.query;
@@ -130,6 +148,9 @@ exports.searchMulti = async (req, res) => {
   }
 };
 
+/**
+ * movie details: uses 'append_to_response' to get cast and trailers in a single api call.
+ */
 exports.getMovieDetails = async (req, res) => {
   try {
     const { id } = req.params;
@@ -152,7 +173,9 @@ exports.getSimilarMovies = async (req, res) => {
   }
 };
 
-// Search specifically for Movies
+/**
+ * manual movie search: specifically logs this activity to the database for analytics.
+ */
 exports.searchMovies = async (req, res) => {
   try {
     const { query } = req.query;
@@ -168,20 +191,18 @@ exports.searchMovies = async (req, res) => {
   }
 };
 
-// Search specifically for People (Actors/Directors)
 exports.searchPeople = async (req, res) => {
   try {
     const { query } = req.query;
     const { data } = await tmdb.get(
       `/search/person?query=${encodeURIComponent(query)}&include_adult=false`,
     );
-    res.json(data.results); // We don't filter people with the movie filter
+    res.json(data.results); 
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
 };
 
-// Fetch Full Person Details (Bio, Credits, etc.)
 exports.getPersonDetails = async (req, res) => {
   try {
     const { id } = req.params;
@@ -194,7 +215,6 @@ exports.getPersonDetails = async (req, res) => {
   }
 };
 
-// Fetch Movie Credits (Cast and Crew)
 exports.getMovieCredits = async (req, res) => {
   try {
     const { id } = req.params;
@@ -205,7 +225,6 @@ exports.getMovieCredits = async (req, res) => {
   }
 };
 
-// Fetch Movie Reviews
 exports.getMovieReviews = async (req, res) => {
   try {
     const { id } = req.params;
@@ -217,6 +236,9 @@ exports.getMovieReviews = async (req, res) => {
   }
 };
 
+/**
+ * discoverByGenre: allows the frontend to request a paginated list of movies for a specific genre ID.
+ */
 exports.discoverByGenre = async (req, res) => {
   try {
     const { genres, page = 1 } = req.query;
@@ -225,7 +247,6 @@ exports.discoverByGenre = async (req, res) => {
       return res.status(400).json({ message: "Genre IDs are required." });
     }
 
-    // we use the 'tmdb' instance created at the top of the file
     const { data } = await tmdb.get(`/discover/movie`, {
       params: {
         with_genres: genres,
@@ -236,7 +257,6 @@ exports.discoverByGenre = async (req, res) => {
 
     res.json(filterResults(data.results));
   } catch (err) {
-    
     console.error("TMDB API ERROR DETAILS:", err.response?.data || err.message);
 
     res.status(err.response?.status || 500).json({
@@ -246,6 +266,10 @@ exports.discoverByGenre = async (req, res) => {
   }
 };
 
+/**
+ * searchByMoodKeyword: a simple keyword-based search that can be used for "mood" tags 
+ * like 'dark', 'uplifting', or 'trippy'.
+ */
 exports.searchByMoodKeyword = async (req, res) => {
   try {
     const { keyword, page = 1 } = req.query;

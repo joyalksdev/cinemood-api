@@ -1,7 +1,7 @@
 const User = require('../models/user');
 const logActivity = require('../utils/logger');
 
-// Get Watchlist
+// Fetch user's saved movies
 exports.getWatchlist = async (req, res) => {
   try {
     const user = await User.findById(req.user.id);
@@ -11,20 +11,19 @@ exports.getWatchlist = async (req, res) => {
   }
 };
 
-// Add to Watchlist
+// Push movie to array (no duplicates)
 exports.addToWatchlist = async (req, res) => {
   try {
     const { movie } = req.body;
     
-    // $addToSet prevents duplicate movies from being added
+    // Use $addToSet to handle double-clicks/duplicates
     const user = await User.findByIdAndUpdate(
       req.user.id,
       { $addToSet: { watchlist: movie } },
       { new: true }
     );
 
-    logActivity(req.user._id, `Added ${movie.title}  to watchlist`, "profile");
-
+    logActivity(req.user._id, `Added ${movie.title} to watchlist`, "profile");
 
     res.status(200).json(user.watchlist);
   } catch (error) {
@@ -32,11 +31,12 @@ exports.addToWatchlist = async (req, res) => {
   }
 };
 
-// Remove from Watchlist
+// Delete movie by its ID
 exports.removeFromWatchlist = async (req, res) => {
   try {
     const { movieId } = req.params;
 
+    // Pulls the specific object out of the array
     const user = await User.findByIdAndUpdate(
       req.user.id,
       { $pull: { watchlist: { id: parseInt(movieId) } } },
@@ -51,8 +51,7 @@ exports.removeFromWatchlist = async (req, res) => {
   }
 };
 
-
-// Get a clean string of titles for the AI Recommendation engine
+// Format titles for Gemini prompt
 exports.getWatchlistTitlesForAI = async (req, res) => {
   try {
     const user = await User.findById(req.user.id);
@@ -61,7 +60,7 @@ exports.getWatchlistTitlesForAI = async (req, res) => {
       return res.status(200).json({ titles: "" });
     }
 
-    // Extract only the titles and join them: "Inception, Batman, Shutter Island"
+    // Turns array into comma-separated string
     const titles = user.watchlist.map(movie => movie.title).join(", ");
 
     res.status(200).json({ titles });
