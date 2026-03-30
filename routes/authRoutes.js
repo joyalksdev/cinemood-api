@@ -9,7 +9,7 @@ const { authLimiter } = require('../utils/rateLimiter');
 router.post('/register', authLimiter, registerUser);
 
 // Protects against brute-force password guessing
-router.post('/login', authLimiter, loginUser);
+router.post('/login', loginUser);
 
 // Clears the session or cookie (no limiter needed)
 router.post('/logout', logoutUser);

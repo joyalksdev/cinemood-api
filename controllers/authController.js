@@ -75,6 +75,7 @@ const logoutUser = async (req, res) => {
   res.cookie("token", "none", {
     expires: new Date(Date.now() + 10 * 1000),
     httpOnly: true,
+    sameSite:"none",
   });
   res.status(200).json({ success: true, message: "Logged out" });
 };
@@ -113,7 +114,7 @@ const forgotPassword = async (req, res) => {
     // inline html for a professional, branded email experience
     const message = `
     <div style="background-color: #050505; color: #ffffff; padding: 40px; font-family: sans-serif; border-radius: 20px; max-width: 600px; margin: auto; border: 1px solid #1a1a1a;">
-        <h1 style="color: #FFC509; font-size: 28px; letter-spacing: -1px;">🎬CineMood</h1>
+        <h1 style="color: #FFF; font-size: 28px; letter-spacing: -1px;">🎬<span style="color:#FFC509">Cine</span>Mood</h1>
         <h2 style="font-size: 20px; margin-top: 20px;">Password Reset Request</h2>
         <p style="color: #a0a0a0; line-height: 1.6;">You told us you forgot your password. No worries! Click the golden button below to set a new one. This link expires in 10 minutes.</p>
         

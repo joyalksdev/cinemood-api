@@ -21,6 +21,6 @@ router.put("/:id/report", protect, reportReview);
 
 // --- MODERATION CONTROL ---
 // Only accessible by roles with 'admin' privileges
-router.put("/reviews/:id/dismiss", protect, admin, dismissReports);
+router.put("/:id/dismiss", protect, admin, dismissReports);
 
 module.exports = router;
