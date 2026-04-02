@@ -28,6 +28,8 @@ const filterResults = (results) =>
     overview: m.overview, 
     release_date: m.release_date || m.first_air_date, 
     media_type: m.media_type || (m.title ? "movie" : "tv"),
+    genre_ids: m.genre_ids,
+    genres: m.genres,
   }));
 
 // --- CONTROLLERS ---

@@ -217,7 +217,7 @@ exports.getDashboardData = async (req, res) => {
 
     // collects raw data points for the frontend to render the activity trend chart
     const chartDataRaw = await Activity.find({
-      type: "search",
+      type: { $in: ["search", "ai"] },
       timestamp: { $gte: sevenDaysAgo },
     }).select("timestamp");
 
