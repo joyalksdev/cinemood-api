@@ -77,7 +77,7 @@ exports.getAiRecommendation = async (req, res) => {
       const movieResults = await Promise.all(moviePromises);
       const finalMovies = movieResults.filter(movie => movie !== null);
 
-      logActivity(req.user._id, `Neural AI Search: ${data}`, "search")
+      logActivity(req.user._id, `Neural AI Search: ${data}`, "ai")
 
       return res.status(200).json({
         success: true,
@@ -170,6 +170,9 @@ exports.syncWeeklySpotlight = async (req, res) => {
     // tells mongoose that a mixed/nested object has changed so it saves correctly
     user.markModified('weeklySpotlight'); 
     await user.save();
+
+    logActivity(req.user._id, `AI Weekly Spotlight Generated for ${req.user.name}`, "ai")
+
 
     return res.status(200).json({
       success: true,

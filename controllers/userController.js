@@ -53,7 +53,7 @@ const updatePassword = async (req, res) => {
 
     await User.findByIdAndUpdate(req.user.id, { password: hashedPassword });
 
-    logActivity(req.user.id, "Changed account password", "auth");
+     logActivity(req.user.id, "Changed account password", "auth");
 
     res.status(200).json({ success: true, message: "Password updated successfully" });
   } catch (error) {

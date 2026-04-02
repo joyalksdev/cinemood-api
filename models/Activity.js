@@ -24,7 +24,7 @@ const activitySchema = new mongoose.Schema({
   // Use 'admin' for moderation logs and 'search' to track AI usage trends.
   type: {
     type: String,
-    enum: ["search", "auth", "profile", "admin"], 
+    enum: ["search", "auth", "profile", "admin" , "ai"], 
     default: "search",
   },
 
@@ -32,6 +32,8 @@ const activitySchema = new mongoose.Schema({
   timestamp: {
     type: Date,
     default: Date.now,
+    // 2592000 seconds = 30 days
+    expires: 2592000 
   },
 });
 

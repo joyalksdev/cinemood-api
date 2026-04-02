@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CineMood API ✦ System Online</title>
+    <style>
+        body {
+            background-color: #0d0d0d;
+            color: #ffffff;
+            font-family: 'Inter', sans-serif;
+            display: flex;
+            justify-content: center;
+            height: 100vh;
+            align-items: center;
+            margin: 0;
+            letter-spacing: 2px;
+        }
+        .card {
+            text-align: center;
+            border: 1px solid #1a1a1a;
+            padding: 50px;
+            border-radius: 30px;
+            background: #000;
+        }
+        .dot {
+            height: 12px;
+            width: 12px;
+            background-color: #09ff63;
+            border-radius: 50%;
+            display: inline-block;
+            box-shadow: 0 0 15px #09ff63;
+            animation: blink 2.5s infinite;
+            margin-bottom: 20px;
+        }
+        h1 { font-size: 1.2rem; font-weight: 900; margin: 0; text-transform: uppercase; }
+        p { color: #444; font-size: 0.7rem; margin-top: 10px; font-weight: bold; text-transform: uppercase; }
+        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <div class="dot"></div>
+        <h1>CineMood API</h1>
+        <p>Neural Engine Online</p>
+    </div>
+</body>
+</html>

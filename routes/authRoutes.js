@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { registerUser, loginUser, logoutUser, forgotPassword, resetPassword } = require('../controllers/authController');
-const { authLimiter } = require('../utils/rateLimiter');
+const { authLimiter } = require('../middleware/rateLimiter');
 
 // --- ACCOUNT ACCESS ---
 

@@ -169,13 +169,15 @@ exports.getAllReviews = async (req, res) => {
 
 exports.deleteReview = async (req, res) => {
   try {
-    const review = await Review.findByIdAndDelete(req.params.id);
+    const review = await Review.findById(req.params.id).populate("userId", "email");
     if (!review) return res.status(404).json({ message: "Review not found" });
+
+    await Review.findByIdAndDelete(req.params.id);
     
     logActivity(
       req.user._id,
-      `Admin: Deleted a flagged review (ID: ${req.params.id})`,
-      "admin",
+      `Admin Deleted: Review by ${review.userId?.email || review.userName}`,
+      "admin"
     );
 
     res.status(200).json({ success: true, message: "Review deleted" });
@@ -200,7 +202,7 @@ exports.getDashboardData = async (req, res) => {
 
     // tracks usage volume specifically for the search/ai features today
     const aiRequests = await Activity.countDocuments({
-      type: "search",
+      type: "ai",
       timestamp: { $gte: new Date().setHours(0, 0, 0, 0) },
     });
 

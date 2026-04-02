@@ -4,6 +4,7 @@ const { protect, admin } = require("../middleware/authMiddleware.js");
 
 const router = express.Router();
 const updateLastActive = require("../middleware/updateActive");
+const { reportLimiter } = require("../middleware/rateLimiter.js");
 
 // Tracks user/admin presence on every review action
 router.use(updateLastActive);
@@ -17,7 +18,7 @@ router.get("/:movieId", getLocalReviews);
 router.post("/", protect, addReview); 
 
 // Allows users to flag inappropriate content for moderation
-router.put("/:id/report", protect, reportReview);
+router.put("/:id/report", protect, reportLimiter, reportReview);
 
 // --- MODERATION CONTROL ---
 // Only accessible by roles with 'admin' privileges

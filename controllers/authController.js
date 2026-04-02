@@ -3,6 +3,8 @@ const bcrypt = require("bcrypt");
 const sendTokenResponse = require("../utils/sendTokenResponse");
 const crypto = require("crypto");
 const sendEmail = require("../utils/sendEmail");
+const logActivity = require("../utils/logger");
+
 
 const registerUser = async (req, res) => {
   try {
@@ -47,7 +49,13 @@ const loginUser = async (req, res) => {
 
     // explicitly selects hidden fields (password/role) needed for validation logic
     const user = await User.findOne({ email }).select("+password +role"); 
-
+    
+    // compares the provided plain text password with the stored hash
+    if (!user || !(await bcrypt.compare(password, user.password))) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Invalid credentials" });
+    }
     // gatekeeper: prevents login if the admin has flagged the account
     if (user && (user.status === 'banned' || user.status === 'suspended')) {
       return res.status(403).json({ 
@@ -56,12 +64,14 @@ const loginUser = async (req, res) => {
       });
     }
 
-    // compares the provided plain text password with the stored hash
+
     if (!user || !(await bcrypt.compare(password, user.password))) {
       return res
         .status(400)
         .json({ success: false, message: "Invalid credentials" });
     }
+
+    logActivity(user._id, `Logged in`, "auth");    
 
     await sendTokenResponse(user, 200, res);
 
@@ -71,12 +81,14 @@ const loginUser = async (req, res) => {
 };
 
 const logoutUser = async (req, res) => {
-  // overwrites the current token cookie with a dummy value that expires instantly
   res.cookie("token", "none", {
-    expires: new Date(Date.now() + 10 * 1000),
+    expires: new Date(0),
     httpOnly: true,
-    sameSite:"none",
+    secure: true, // Always true for cross-site cookies
+    sameSite: "none", // Required for cross-site (Render/Vercel)
+    path: "/", // Ensure it clears for the whole domain
   });
+  
   res.status(200).json({ success: true, message: "Logged out" });
 };
 

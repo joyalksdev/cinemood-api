@@ -5,7 +5,9 @@ const express = require("express");
 const cookieParser = require("cookie-parser");
 const cors = require('cors');
 const connectDB = require("./config/dbConection");
+const path = require('path');
 
+// routes
 const authRoutes = require('./routes/authRoutes')
 const userRoutes = require('./routes/userRoutes');
 const watchlistRoutes = require('./routes/watchlistRoutes')
@@ -14,26 +16,34 @@ const reviewRoutes = require('./routes/reviewRoutes')
 const aiRoutes = require('./routes/aiRoutes')
 const adminRoutes = require("./routes/adminRoutes");
 const supportRoutes = require('./routes/supportRoutes');
+
+// middleware
 const updateLastActive = require("./middleware/updateActive");
 const { errorHandler } = require("./middleware/errorMiddleware");
+const { globalLimiter } = require("./middleware/rateLimiter");
 
-// establishes the connection to mongodb before the app starts listening
+// connect to db
 connectDB()
 
 const app = express()
 
-app.use(express.json())
+// essential for render/vercel to get real IP
+app.set('trust proxy', 1);
 
+app.use(express.json())
 app.use(cookieParser())
 
-// global middleware to track user activity on every incoming request
-app.use(updateLastActive)
-
+// cors setup for cookies
 app.use(cors({
     origin: process.env.FRONTEND_URL, 
-    credentials: true, // required to accept jwt cookies from the frontend
+    credentials: true, 
 }));
 
+// security and activity tracking
+app.use(globalLimiter);
+app.use(updateLastActive);
+
+// api endpoints
 app.use('/api/ai', aiRoutes);
 app.use('/api/auth', authRoutes);
 app.use("/api/admin", adminRoutes);
@@ -43,12 +53,13 @@ app.use('/api/watchlist', watchlistRoutes);
 app.use('/api/reviews', reviewRoutes);
 app.use('/api/support', supportRoutes);
 
-// catches any errors thrown in the routes to keep the process from crashing
+// error handling always goes last
 app.use(errorHandler)
 
-app.get('/', (req,res)=>{
-    res.send('API Running fine...')
-})
+// Server running check - sends the custom styled html file
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
 
 const port = process.env.PORT || 4000
 

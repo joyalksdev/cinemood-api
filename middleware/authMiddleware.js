@@ -32,7 +32,14 @@ const protect = async (req, res, next) => {
     if (req.user && req.user.status === 'banned') {
       return res.status(403).json({ 
           success: false, 
-          message: 'Your account has been terminated due to a violation of our terms.' 
+          message: 'Your account has been banned due to a violation of our terms.' 
+      });
+    }
+
+    if (req.user.status === 'suspended') {
+      return res.status(403).json({ 
+          success: false, 
+          message: 'Your account is currently under a temporary suspension.' 
       });
     }
 
